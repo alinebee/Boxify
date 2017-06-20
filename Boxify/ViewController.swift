@@ -311,19 +311,17 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				// Check where the hit vector landed within the box's own coordinate system, which may be rotated.
 				let locationInBox = box.convertPosition(locationInWorld, from: nil)
 				
-				let distanceForAxis = locationInBox.value(for: side.axis)
+				var distanceForAxis = locationInBox.value(for: side.axis)
 				
-				// Don't allow the box to be dragged inside-out
+				// Don't allow the box to be dragged inside-out: stop dragging the side at the point at which it meets its opposite side.
 				switch side.edge {
 				case .min:
-					if distanceForAxis <= box.boundingBox.max.value(for: side.axis) {
-						box.move(side: side, to: distanceForAxis)
-					}
-				case.max:
-					if distanceForAxis >= box.boundingBox.min.value(for: side.axis) {
-						box.move(side: side, to: distanceForAxis)
-					}
+					distanceForAxis = min(distanceForAxis, box.boundingBox.max.value(for: side.axis))
+				case .max:
+					distanceForAxis = max(distanceForAxis, box.boundingBox.min.value(for: side.axis))
 				}
+				
+				box.move(side: side, to: distanceForAxis)
 			}
 		case .ended, .cancelled:
 			mode = .waitingForFaceDrag
