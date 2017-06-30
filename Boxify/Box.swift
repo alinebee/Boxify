@@ -173,6 +173,7 @@ class Box: SCNNode {
 		let node = makeNode(with: plane)
 		node.name = side.rawValue
 		node.geometry?.firstMaterial?.transparency = 0.1
+		node.geometry?.firstMaterial?.writesToDepthBuffer = false
 		
 		// Rotate each face to the appropriate facing
 		switch side {
@@ -200,6 +201,7 @@ class Box: SCNNode {
 			fatalError("No face found for \(side)")
 		}
 		face.geometry?.firstMaterial?.transparency = opacity
+		face.geometry?.firstMaterial?.writesToDepthBuffer = (opacity >= 1.0)
 	}
 	
 	func highlight(side: Side) {

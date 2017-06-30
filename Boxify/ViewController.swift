@@ -20,8 +20,12 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 	
 	var box: Box!
 	var hitTestPlane: SCNNode!
-
 	var floor: SCNNode!
+	
+	struct RenderingCategory: OptionSet {
+		let rawValue: Int
+		static let reflected = RenderingCategory(rawValue: 1 << 1)
+	}
 	
 	enum InteractionMode {
 		case waitingForLocation
@@ -48,7 +52,6 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				box.clearHighlights()
 				
 				floor.isHidden = false
-				floor.position = box.position
 				
 				// Place the hit-test plane flat on the z-axis, aligned with the bottom of the box.
 				hitTestPlane.isHidden = false
@@ -63,7 +66,6 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				box.clearHighlights()
 				
 				floor.isHidden = false
-				floor.position = box.position
 				hitTestPlane.isHidden = true
 				
 			case .draggingFace(let side, let dragStart):
@@ -71,7 +73,6 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				
 				box.isHidden = false
 				floor.isHidden = false
-				floor.position = box.position
 				
 				hitTestPlane.isHidden = false
 				hitTestPlane.position = dragStart
@@ -130,16 +131,19 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 		let floorSurface = SCNFloor()
 		floorSurface.reflectivity = 0.2
 		floorSurface.reflectionFalloffEnd = 0.05
+		floorSurface.reflectionCategoryBitMask = RenderingCategory.reflected.rawValue
 		
 		// Floor scene reflections are blended with the diffuse color's transparency mask, so if diffuse is transparent then no reflection will be shown.
 		// To get around this, we make the floor black and use additive blending so that only the brighter reflection is shown.
 		floorSurface.firstMaterial?.diffuse.contents = UIColor.black
+		floorSurface.firstMaterial?.writesToDepthBuffer = false
 		floorSurface.firstMaterial?.blendMode = .add
 		
 		floor = SCNNode(geometry: floorSurface)
 		floor.isHidden = true
 		
-		sceneView.scene.rootNode.addChildNode(floor)
+		box.addChildNode(floor)
+		box.categoryBitMask |= RenderingCategory.reflected.rawValue
     }
 	
     override func viewWillAppear(_ animated: Bool) {
@@ -417,7 +421,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 		}
 		
 		let node = SCNNode(geometry: plane)
-		node.renderingOrder = -1
+		node.categoryBitMask = 2
 		
         return node
     }
