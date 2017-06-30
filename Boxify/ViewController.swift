@@ -25,12 +25,26 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 	struct RenderingCategory: OptionSet {
 		let rawValue: Int
 		static let reflected = RenderingCategory(rawValue: 1 << 1)
+		static let planes = RenderingCategory(rawValue: 1 << 2)
 	}
 	
 	enum InteractionMode {
 		case waitingForLocation
 		case draggingInitialWidth, draggingInitialLength
 		case waitingForFaceDrag, draggingFace(side: Box.Side, dragStart: SCNVector3)
+	}
+	
+	var planesShown: Bool {
+		get { return RenderingCategory(rawValue: sceneView.pointOfView!.camera!.categoryBitMask).contains(.planes) }
+		set {
+			var mask = RenderingCategory(rawValue: sceneView.pointOfView!.camera!.categoryBitMask)
+			if newValue == true {
+				mask.formUnion(.planes)
+			} else {
+				mask.subtract(.planes)
+			}
+			sceneView.pointOfView!.camera!.categoryBitMask = mask.rawValue
+		}
 	}
 	
 	var mode: InteractionMode = .waitingForLocation {
@@ -44,6 +58,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				
 				hitTestPlane.isHidden = true
 				floor.isHidden = true
+				
+				planesShown = true
 				
 			case .draggingInitialWidth, .draggingInitialLength:
 				rotationGesture.isEnabled = true
@@ -59,6 +75,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				hitTestPlane.boundingBox.min = SCNVector3(x: -1000, y: 0, z: -1000)
 				hitTestPlane.boundingBox.max = SCNVector3(x: 1000, y: 0, z: 1000)
 				
+				planesShown = false
+				
 			case .waitingForFaceDrag:
 				rotationGesture.isEnabled = true
 				
@@ -68,6 +86,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				floor.isHidden = false
 				hitTestPlane.isHidden = true
 				
+				planesShown = false
+				
 			case .draggingFace(let side, let dragStart):
 				rotationGesture.isEnabled = true
 				
@@ -76,6 +96,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				
 				hitTestPlane.isHidden = false
 				hitTestPlane.position = dragStart
+				
+				planesShown = false
 				
 				box.highlight(side: side)
 				
@@ -244,9 +266,12 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				box.rotation = SCNVector4(x: 0, y: 1, z: 0, w: -(angleInRadians + Float.pi))
 			}
 		case .ended, .cancelled:
-			// Once the box has width, switch to length-dragging mode. Until then, stay in width-dragging mode.
-			if box.boundingBox.max.x != box.boundingBox.min.x {
+			if abs(box.boundingBox.max.x - box.boundingBox.min.x) >= box.minLabelDistanceThreshold {
+				// If the box ended up with a usable width, switch to length-dragging mode.
 				mode = .draggingInitialLength
+			} else {
+				// Otherwise, give up on this drag and start again.
+				resetBox()
 			}
 		default:
 			break
@@ -271,8 +296,9 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 				}
 			}
 		case .ended, .cancelled:
-			// Once the box has length, switch to face-dragging mode. Until then, stay in length-dragging mode.
-			if box.boundingBox.max.z != box.boundingBox.min.z {
+			// Once the box has a usable width and depth, switch to face-dragging mode.
+			// Otherwise, stay in length-dragging mode.
+			if (box.boundingBox.max.z - box.boundingBox.min.z) >= box.minLabelDistanceThreshold {
 				mode = .waitingForFaceDrag
 			}
 		default:
@@ -421,7 +447,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 		}
 		
 		let node = SCNNode(geometry: plane)
-		node.categoryBitMask = 2
+		node.categoryBitMask = RenderingCategory.planes.rawValue
 		
         return node
     }
