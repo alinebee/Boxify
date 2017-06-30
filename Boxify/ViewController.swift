@@ -22,6 +22,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 	var hitTestPlane: SCNNode!
 	var floor: SCNNode!
 	
+	var currentAnchor: ARAnchor?
+	
 	struct RenderingCategory: OptionSet {
 		let rawValue: Int
 		static let reflected = RenderingCategory(rawValue: 1 << 1)
@@ -189,6 +191,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 	func resetBox() {
 		mode = .waitingForLocation
 		box.resizeTo(min: .zero, max: .zero)
+		currentAnchor = nil
 	}
 	
 	// MARK: - Touch handling
@@ -240,9 +243,12 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 		case .began, .changed:
 			// Use real-world ARKit coordinates to determine where to start drawing
 			let touchPos = gestureRecognizer.location(in: sceneView)
-			if let startPos = realWorldHit(at: touchPos).position {
-				// Once the user hits a usable real-world location, switch into line-dragging mode
+			
+			let hit = realWorldHit(at: touchPos)
+			if let startPos = hit.position, let plane = hit.planeAnchor {
+				// Once the user hits a usable real-world plane, switch into line-dragging mode
 				box.position = startPos
+				currentAnchor = plane
 				mode = .draggingInitialWidth
 			}
 		default:
@@ -459,6 +465,14 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
 		
 		plane.width = CGFloat(planeAnchor.extent.x)
 		plane.length = CGFloat(planeAnchor.extent.z)
+		
+		// If this anchor is the one the box is positioned relative to, then update the box to match any corrections to the plane's observed position.
+		if plane == currentAnchor {
+			let oldPos = node.position
+			let newPos = SCNVector3.positionFromTransform(planeAnchor.transform)
+			let delta = newPos - oldPos
+			box.position += delta
+		}
 		
 		node.transform = SCNMatrix4(planeAnchor.transform)
 		node.pivot = SCNMatrix4(translationByX: -planeAnchor.center.x, y: -planeAnchor.center.y, z: -planeAnchor.center.z)
