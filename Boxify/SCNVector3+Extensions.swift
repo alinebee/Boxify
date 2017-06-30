@@ -160,10 +160,6 @@ func *= (left: inout SCNVector3, right: SCNVector3) {
 // MARK: - Vectors from matrices
 
 extension matrix_float4x4 {
-	init(_ mat: SCNMatrix4) {
-		self = SCNMatrix4ToMat4(mat)
-	}
-	
 	var position: SCNVector3 {
 		return SCNVector3(x: columns.3.x,
 		                  y: columns.3.y,

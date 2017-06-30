@@ -10,9 +10,6 @@ import SceneKit
 
 extension SCNMatrix4 {
 	//MARK: - Initializers
-	init(_ mat: matrix_float4x4) {
-		self = SCNMatrix4FromMat4(mat)
-	}
 	
 	init(translation: SCNVector3) {
 		self = SCNMatrix4MakeTranslation(translation.x, translation.y, translation.z)
