@@ -3,7 +3,7 @@
 This is an ARKit project that demonstrates drawing out a 3-dimensional box in the world, which can be rotated and resized from each of its faces.
 
 ### Requirements
-1. XCode 9 (or newer)
+1. XCode 9.1 (or newer)
 2. [One of the following devices (or newer) running iOS 11 (or newer)](http://wccftech.com/heres-the-list-of-iphone-models-compatible-with-the-arkit-in-ios-11/):
     - The 2017 9.7-inch iPad
     - All three variants of the iPad Pro
