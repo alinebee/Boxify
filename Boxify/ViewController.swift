@@ -174,7 +174,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDe
         super.viewWillAppear(animated)
         
         // Create a session configuration
-        let configuration = ARWorldTrackingSessionConfiguration()
+        let configuration = ARWorldTrackingConfiguration()
 		configuration.planeDetection = .horizontal
 		
         // Run the view's session
